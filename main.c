@@ -1,12 +1,51 @@
 #include <msp430.h> 
 
+#include "Drivers/uart.h"
+#include "Drivers/cs.h"
 
-/**
- * main.c
- */
+#define STRING_SIZE 8
+
+#define DATARATE 115200     // UART baud rate
+
+uint16_t motorSpeed = 65535;
+uint16_t targedSpeed = 0;
+
+void sendMotorSpeed();
+
 int main(void)
 {
-	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
+	WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
 	
-	return 0;
+	// Init clock (setup DCO,  MCLK and SMCLK)
+    CS_setDCOFrequency(16000000);                                           // => DCOCLK = 16 MHz
+    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);      // => MCLK = DCOCLK
+    CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);     // => SMCLK = DCOCLK
+
+    // Init UART interface
+    uart_init(DATARATE, CS_getSMCLK());     // Set baud rate 9600 for a given SMCLK frequency
+
+    __enable_interrupt();       // Global interrupt enable
+
+    sendMotorSpeed();
+
+    while(1){
+        int i = uart_peek('B');
+        if(i != -1){
+            char ioStr[STRING_SIZE+1];
+            fgets(ioStr,STRING_SIZE,stdin);
+            if (i == 6) {
+                targedSpeed = decode(ioStr+1);
+                motorSpeed = targedSpeed;
+                sendMotorSpeed();
+            }
+        }
+    }
+}
+
+void sendMotorSpeed(){
+    puts("\r\n");
+    char buff[8] = "#00000A";
+    encode(motorSpeed, buff);
+    puts(buff);
+    puts("\r\n");
 }
