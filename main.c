@@ -5,7 +5,7 @@
 
 #define STRING_SIZE 8
 
-#define DATARATE 115200     // UART baud rate
+#define DATARATE 9600     // UART baud rate
 
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
@@ -17,7 +17,7 @@ int main(void)
 	WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
 	
 	// Init clock (setup DCO,  MCLK and SMCLK)
-    CS_setDCOFrequency(16000000);                                           // => DCOCLK = 16 MHz
+    CS_setDCOFrequency(1000000);                                           // => DCOCLK = 1 MHz
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);      // => MCLK = DCOCLK
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);     // => SMCLK = DCOCLK
 
