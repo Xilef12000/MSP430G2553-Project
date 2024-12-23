@@ -10,7 +10,7 @@
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
 
-void sendMotorSpeed();
+void sendMotorSpeed(uint16_t speed, char c);
 
 int main(void)
 {
@@ -24,9 +24,13 @@ int main(void)
     // Init UART interface
     uart_init(DATARATE, CS_getSMCLK());     // Set baud rate 9600 for a given SMCLK frequency
 
+    TA0CCR0 = (49999);                  // 400ms
+    TA0CTL = TASSEL_2 + MC_1 + ID_3;    // SMCLK, upmode, div 8
+    TA0CCTL0 = CCIE;                    // enable interrupt
+
     __enable_interrupt();       // Global interrupt enable
 
-    sendMotorSpeed();
+    sendMotorSpeed(motorSpeed, 'A');
 
     while(1){
         int i = uart_peek('B');
@@ -35,17 +39,29 @@ int main(void)
             fgets(ioStr,STRING_SIZE,stdin);
             if (i == 6) {
                 targedSpeed = decode(ioStr+1);
-                motorSpeed = targedSpeed;
-                sendMotorSpeed();
+                sendMotorSpeed(targedSpeed, 'C');
+                motorSpeed = targedSpeed; // WIP: just for testing
             }
         }
     }
 }
 
-void sendMotorSpeed(){
+void sendMotorSpeed(uint16_t speed, char c){
     puts("\r\n");
-    char buff[8] = "#00000A";
-    encode(motorSpeed, buff);
+    char buff[8] = "#00000Z";
+    buff[6] = c;
+    // A Motorspeed from Motor
+    // B TargedSpeed from Display
+    // C TargedSpeed from Motor
+    // D Motorspeed from Display
+    // Z placeholder
+    encode(speed, buff);
     puts(buff);
     puts("\r\n");
+}
+
+// Timer A0 interrupt service routine
+#pragma vector=TIMER0_A0_VECTOR
+__interrupt void Timer_A (void){
+    sendMotorSpeed(motorSpeed, 'A');
 }
