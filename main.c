@@ -1,3 +1,4 @@
+// Display
 #include <msp430.h> 
 
 #include "Drivers/uart.h"
@@ -10,7 +11,7 @@
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
 
-void sendMotorSpeed(uint16_t speed, char c);
+void sendSpeed(uint16_t speed, char c);
 
 int main(void)
 {
@@ -24,30 +25,29 @@ int main(void)
     // Init UART interface
     uart_init(DATARATE, CS_getSMCLK());     // Set baud rate 9600 for a given SMCLK frequency
 
-    TA0CCR0 = (49999);                  // 400ms
-    TA0CTL = TASSEL_2 + MC_1 + ID_3;    // SMCLK, upmode, div 8
-    TA0CCTL0 = CCIE;                    // enable interrupt
+    TA1CCR0 = (49999);                  // 400ms
+    TA1CTL = TASSEL_2 + MC_1 + ID_3;    // SMCLK, upmode, div 8
+    TA1CCTL0 = CCIE;                    // enable interrupt
 
     __enable_interrupt();       // Global interrupt enable
 
-    sendMotorSpeed(motorSpeed, 'A');
+    sendSpeed(targedSpeed, 'B');
 
     while(1){
-        int i = uart_peek('B');
+        int i = uart_peek('A');
         if(i != -1){
             char ioStr[STRING_SIZE+1];
             fgets(ioStr,STRING_SIZE,stdin);
             if (i == 6) {
-                targedSpeed = decode(ioStr+1);
-                sendMotorSpeed(targedSpeed, 'C');
-                motorSpeed = targedSpeed; // WIP: just for testing
+                motorSpeed = decode(ioStr+1);
+                sendSpeed(motorSpeed, 'D');
+                targedSpeed = motorSpeed; // WIP: just for testing
             }
         }
     }
 }
 
-void sendMotorSpeed(uint16_t speed, char c){
-    puts("\r\n");
+void sendSpeed(uint16_t speed, char c){
     char buff[8] = "#00000Z";
     buff[6] = c;
     // A Motorspeed from Motor
@@ -57,11 +57,10 @@ void sendMotorSpeed(uint16_t speed, char c){
     // Z placeholder
     encode(speed, buff);
     puts(buff);
-    puts("\r\n");
 }
 
-// Timer A0 interrupt service routine
-#pragma vector=TIMER0_A0_VECTOR
+// Timer1 A0 interrupt service routine
+#pragma vector=TIMER1_A0_VECTOR
 __interrupt void Timer_A (void){
-    sendMotorSpeed(motorSpeed, 'A');
+    sendSpeed(targedSpeed, 'B');
 }
