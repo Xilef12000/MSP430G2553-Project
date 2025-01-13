@@ -3,6 +3,7 @@
 
 #include "Drivers/uart.h"
 #include "Drivers/cs.h"
+#include <Drivers/ssd1306_lib.h>
 
 #define STRING_SIZE 8
 
@@ -12,18 +13,27 @@ uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
 
 void sendSpeed(uint16_t speed, char c);
+void updateDisplay();
+void itoa(uint16_t num, char *str);
 
 int main(void)
 {
 	WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
 	
 	// Init clock (setup DCO,  MCLK and SMCLK)
-    CS_setDCOFrequency(1000000);                                           // => DCOCLK = 1 MHz
+    CS_setDCOFrequency(16000000);                                           // => DCOCLK = 1 MHz
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);      // => MCLK = DCOCLK
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);     // => SMCLK = DCOCLK
 
     // Init UART interface
     uart_init(DATARATE, CS_getSMCLK());     // Set baud rate 9600 for a given SMCLK frequency
+
+    spi_init();               // Initialize SPI
+    ssd1306_init();           // Initialize SSD1306
+    ssd1306_clear();          // Clear the screen
+    //ssd1306_draw6x8Str(0,  0, "Test4", 1, 0);
+    //ssd1306_draw12x16Str(60,  40, "Test3", 0);
+
 
     TA1CCR0 = (49999);                  // 400ms
     TA1CTL = TASSEL_2 + MC_1 + ID_3;    // SMCLK, upmode, div 8
@@ -32,6 +42,7 @@ int main(void)
     __enable_interrupt();       // Global interrupt enable
 
     sendSpeed(targedSpeed, 'B');
+    updateDisplay();
 
     while(1){
         int i = uart_peek('A');
@@ -42,6 +53,7 @@ int main(void)
                 motorSpeed = decode(ioStr+1);
                 sendSpeed(motorSpeed, 'D');
                 targedSpeed = motorSpeed; // WIP: just for testing
+                updateDisplay();
             }
         }
     }
@@ -57,6 +69,25 @@ void sendSpeed(uint16_t speed, char c){
     // Z placeholder
     encode(speed, buff);
     puts(buff);
+}
+
+void updateDisplay() {
+    char buffd[6] = "00000";
+    itoa(motorSpeed, buffd);
+    ssd1306_draw12x16Str(0,  0, buffd, 0);
+    char buffe[6] = "00000";
+    itoa(targedSpeed, buffe);
+    ssd1306_draw12x16Str(0,  16, buffe, 0);
+}
+
+void itoa(uint16_t num, char *str) {
+    //Buffer needs to be of type char[6]
+    uint8_t i = 4;
+
+    while (num > 0) {
+        str[i--] = (num % 10) + '0';  // Convert last digit to a character
+        num /= 10;  // Remove the last digit
+    }
 }
 
 // Timer1 A0 interrupt service routine
