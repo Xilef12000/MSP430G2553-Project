@@ -13,7 +13,13 @@
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
 
-#define SMOOTHING_FACTOR 128  // Strength of the digital low-pass filter
+#define TIME_PERIODE    65535
+#define ON_TIME_0           0
+#define ON_TIME_40          20000
+#define ON_TIME_70          35000
+#define ON_TIME_100         50000
+
+#define SMOOTHING_FACTOR 16  // Strength of the digital low-pass filter
 
 void        portInit(void); // initialize counter input pin
 
@@ -46,17 +52,25 @@ int main(void)
 
     // Configure the TA1 CCR0 to do input capture
     //   (look for "TACCTLx" (Capture/Compare Control Register) in the Family Guide)
-    TA1CCTL0 = CAP | CM_1 | CCIE | SCS | CCIS_0;// Capture Mode:                            CAP
+    TA1CCTL2 = CAP | CM_1 | CCIE | SCS | CCIS_1;// Capture Mode:                            CAP
                                                 // Capture Input: CCI0A:                    CCIS_0
                                                 // Capture on positive (rising) Edge:       CM_1
                                                 // Capture/compare interrupt enable:        CCIE
                                                 // Synchronize capture source:              SCS
 
     // Setup and start Timer TA1
+    //TA1CTL |= TASSEL_2 | MC_1 | ID_0;   // PWM Testing
+    //TA1CCR0  = TIME_PERIODE-1;              // PWM Period
+
     TA1CTL |= TASSEL_2 | MC_2 | TACLR | ID_0;   // TASSEL_2:    SMCLK
                                                 // Cont Mode:   MC_2
                                                 // TimerA clear: TACLR
                                                 // Input divider: ID_0: /1
+
+    // Timer A0 CaptureCompareUnit 1
+    TA1CCTL1 = OUTMOD_7;                    // CCR1 reset/set
+    TA1CCR1  = ON_TIME_40;                 // CCR1 PWM duty cycle
+
 
     __enable_interrupt();       // Global interrupt enable
 
@@ -97,9 +111,13 @@ void portInit(void){
     P2DIR  = 0x00;                  // Set all P2 pins as inputs
 
     // P2.0/TA1.0 Input Capture
-    P2SEL  |= BIT0;                 // TA1.0 option select
-    P2SEL2 &= ~BIT0;                // TA1.0 option select
+    P2SEL  |= BIT5;                 // TA1.0 option select
+    P2SEL2 &= ~BIT5;                // TA1.0 option select
 
+    // MOTOR PWM
+    P2DIR |= BIT1;                          // P1.6 output
+    P2SEL |= BIT1;                          // P1.6 for TA0.1 output
+    P2SEL2 &= ~BIT1;                             // Select default function for P1.2
 
     // TESTPIN_INIT();
 
@@ -113,13 +131,13 @@ __interrupt void Timer_A (void){
 }
 
 // Timer A0 interrupt service routine
-#pragma vector=TIMER1_A0_VECTOR
+#pragma vector=TIMER1_A1_VECTOR
 __interrupt void Timer_A1 (void)
 {
 
     //TESTPIN1_HIGH();                // Use Testpin to measure the run time of the ISR with an oscilloscope
 
-    capturedCount   = TA1CCR0;      // Readout the captured timer value
+    capturedCount   = TA1CCR2;      // Readout the captured timer value
 
     interval        = capturedCount - lastCount;
 
@@ -134,7 +152,7 @@ __interrupt void Timer_A1 (void)
 
     lastCount       = capturedCount;
 
-
+    TA1CCTL2 &= ~CCIFG;   // reset IFG
     //TESTPIN1_LOW();                 // Use Testpin to measure the run time of the ISR with an oscilloscope
 
 }
