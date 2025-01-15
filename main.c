@@ -134,23 +134,26 @@ __interrupt void Timer_A (void){
 #pragma vector=TIMER1_A1_VECTOR
 __interrupt void Timer_A1 (void)
 {
+    if(TA1CCTL2 &= ~CCIFG){
 
-    //TESTPIN1_HIGH();                // Use Testpin to measure the run time of the ISR with an oscilloscope
+        //TESTPIN1_HIGH();                // Use Testpin to measure the run time of the ISR with an oscilloscope
 
-    capturedCount   = TA1CCR2;      // Readout the captured timer value
+        capturedCount   = TA1CCR2;      // Readout the captured timer value
 
-    interval        = capturedCount - lastCount;
-
-
-    // We are calculating with integer values. Therefore in a division by SMOOTHING_FACTOR the decimal places are removed
-    // Idea for a solution: Calculate always with value*128
-    // (The use of floats is much more resource-intensive)
-    smoothed_interval_x128 = (smoothed_interval_x128 * (SMOOTHING_FACTOR - 1) + (((uint32_t)interval)*128)) / SMOOTHING_FACTOR;
-
-    motorSpeed = (uint16_t)(smoothed_interval_x128/128);
+        interval        = capturedCount - lastCount;
 
 
-    lastCount       = capturedCount;
+        // We are calculating with integer values. Therefore in a division by SMOOTHING_FACTOR the decimal places are removed
+        // Idea for a solution: Calculate always with value*128
+        // (The use of floats is much more resource-intensive)
+        smoothed_interval_x128 = (smoothed_interval_x128 * (SMOOTHING_FACTOR - 1) + (((uint32_t)interval)*128)) / SMOOTHING_FACTOR;
+
+        motorSpeed = (uint16_t)(smoothed_interval_x128/128);
+
+
+        lastCount       = capturedCount;
+
+    }
 
     TA1CCTL2 &= ~CCIFG;   // reset IFG
     //TESTPIN1_LOW();                 // Use Testpin to measure the run time of the ISR with an oscilloscope
