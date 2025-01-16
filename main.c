@@ -2,16 +2,15 @@
 #include <msp430.h> 
 #include <stdint.h>
 
-#include "Drivers/delay.h"
 #include "Drivers/uart.h"
 #include "Drivers/cs.h"
 
-#define STRING_SIZE 8 // UART message size
+#define STRING_SIZE 8// UART message size
 
 #define DATARATE 9600     // UART baud rate
 
 uint16_t motorSpeed = 65535;
-uint16_t targedSpeed = 0;
+uint16_t targedSpeed = 1000;
 
 #define TIME_PERIODE    65535
 #define ON_TIME_0           0
@@ -19,7 +18,15 @@ uint16_t targedSpeed = 0;
 #define ON_TIME_70          35000
 #define ON_TIME_100         50000
 
-#define SMOOTHING_FACTOR 16  // Strength of the digital low-pass filter
+// PID variables
+#define Kp 64 // Teiler Kp_divider; ie 16/16 = 1 = Kp
+#define Kp_divider 1
+volatile uint16_t e = 0;
+
+#define bit16_max 65535
+#define e_max (bit16_max / Kp)
+
+#define SMOOTHING_FACTOR 1  // Strength of the digital low-pass filter
 
 void        portInit(void); // initialize counter input pin
 
@@ -29,13 +36,14 @@ volatile uint16_t        interval;
 volatile uint32_t        smoothed_interval_x128;
 
 void sendSpeed(uint16_t speed, char c);
+volatile char timer_div_counter = 0;
 
 int main(void)
 {
     WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
 
     // Init clock (setup DCO,  MCLK and SMCLK)
-    CS_setDCOFrequency(1000000);                                           // => DCOCLK = 1 MHz
+    CS_setDCOFrequency(8000000);                                           // => DCOCLK = 1 MHz
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);      // => MCLK = DCOCLK
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);     // => SMCLK = DCOCLK
 
@@ -62,10 +70,12 @@ int main(void)
     //TA1CTL |= TASSEL_2 | MC_1 | ID_0;   // PWM Testing
     //TA1CCR0  = TIME_PERIODE-1;              // PWM Period
 
-    TA1CTL |= TASSEL_2 | MC_2 | TACLR | ID_0;   // TASSEL_2:    SMCLK
-                                                // Cont Mode:   MC_2
+    TA1CTL |= TASSEL_2 | MC_1 | TACLR | ID_0;   // TASSEL_2:    SMCLK
+                                                // Up Mode:   MC_2
                                                 // TimerA clear: TACLR
                                                 // Input divider: ID_0: /1
+    TA1CCR0  = bit16_max-1;                 // CCR1 PWM duty cycle
+
 
     // Timer A0 CaptureCompareUnit 1
     TA1CCTL1 = OUTMOD_7;                    // CCR1 reset/set
@@ -82,9 +92,9 @@ int main(void)
             char ioStr[STRING_SIZE+1];
             fgets(ioStr,STRING_SIZE,stdin);
             if (msg_complete == 6) {
-                targedSpeed = decode(ioStr+1);
+                targedSpeed = decode(ioStr+1) / 24;
                 sendSpeed(targedSpeed, 'C');
-                motorSpeed = targedSpeed; // WIP: just for testing
+                //motorSpeed = targedSpeed; // WIP: just for testing
             }
         }
     }
@@ -127,35 +137,85 @@ void portInit(void){
 // Timer0 A0 interrupt service routine
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void){
-    sendSpeed(motorSpeed, 'A');
+    if(timer_div_counter == 7){
+        sendSpeed(TA1CCR1, 'A'); // TA1CCR1 motorSpeed
+        timer_div_counter = 0;
+    }
+    timer_div_counter++;
 }
 
-// Timer A0 interrupt service routine
+// Timer A1 interrupt service routine
 #pragma vector=TIMER1_A1_VECTOR
 __interrupt void Timer_A1 (void)
 {
-    if(TA1CCTL2 &= ~CCIFG){
+    if(TA1CCTL2 & CCIFG){
 
         //TESTPIN1_HIGH();                // Use Testpin to measure the run time of the ISR with an oscilloscope
 
         capturedCount   = TA1CCR2;      // Readout the captured timer value
 
-        interval        = capturedCount - lastCount;
+        // Timer overflow handling
+        if(capturedCount > lastCount){
+            interval        = capturedCount - lastCount;
+        }
+        else{
+            interval = bit16_max - lastCount + capturedCount;
+        }
 
 
+        /*
         // We are calculating with integer values. Therefore in a division by SMOOTHING_FACTOR the decimal places are removed
         // Idea for a solution: Calculate always with value*128
         // (The use of floats is much more resource-intensive)
         smoothed_interval_x128 = (smoothed_interval_x128 * (SMOOTHING_FACTOR - 1) + (((uint32_t)interval)*128)) / SMOOTHING_FACTOR;
 
-        motorSpeed = (uint16_t)(smoothed_interval_x128/128);
+        motorSpeed = bit16_max - (uint16_t)(smoothed_interval_x128/128);
+        */
 
+        // reversed relation with minus
+        //motorSpeed = bit16_max - interval;
+
+        // reversed relation fraction
+        motorSpeed = 8e6 / interval; // pulses per second
 
         lastCount       = capturedCount;
 
+        // regulator code
+
+        if(motorSpeed > targedSpeed){
+            e = 0; // = 2^16 - targedSpeed - motorSpeed
+        }
+        else{
+            e = targedSpeed - motorSpeed;
+        }
+
+        if(e > e_max){          // overflow handling
+            TA1CCR1 = bit16_max;
+        }
+        else{
+            TA1CCR1 = (Kp * e); //(Kp * e) / Kp_divider;
+        }
     }
 
     TA1CCTL2 &= ~CCIFG;   // reset IFG
     //TESTPIN1_LOW();                 // Use Testpin to measure the run time of the ISR with an oscilloscope
 
 }
+
+/*
+// Timer A1 interrupt service routine
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt void Timer_A1 (void){
+
+    // regulator code
+
+    if(motorSpeed < targedSpeed){
+        e = motorSpeed - targedSpeed ; // = 2^16 - targedSpeed - motorSpeed
+    }
+    else{
+        e = 0;
+    }
+    y = Kp * e;
+    TA1CCR1  = y;
+}
+*/
