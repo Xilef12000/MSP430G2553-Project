@@ -39,6 +39,13 @@ int main(void)
     TA1CTL = TASSEL_2 + MC_1 + ID_3;    // SMCLK, upmode, div 8
     TA1CCTL0 = CCIE;                    // enable interrupt
 
+    P2DIR &= ~(BIT1 + BIT2);    // input
+    P2REN |= BIT1 + BIT2;       // enable internal pull
+    P2OUT |= BIT1 + BIT2;       // pullup
+    P2IE |= BIT1 + BIT2;        // enable interrupt
+    P2IES |= BIT1 + BIT2;       // falling edge
+    P2IFG = 0x00;               // clear interrupt
+
     __enable_interrupt();       // Global interrupt enable
 
     sendSpeed(targedSpeed, 'B');
@@ -94,4 +101,18 @@ void itoa(uint16_t num, char *str) {
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt void Timer_A (void){
     sendSpeed(targedSpeed, 'B');
+}
+
+// Port2 interrupt service routine
+#pragma vector=PORT2_VECTOR
+__interrupt void Port2 (void){
+    if(P2IFG & BIT1 && targedSpeed > 0){
+        targedSpeed--;
+    }
+    if(P2IFG & BIT2 && targedSpeed < UINT16_MAX){
+        targedSpeed++;
+    }
+
+   P2IFG = 0x00;    // clear interrupt
+   updateDisplay();
 }
