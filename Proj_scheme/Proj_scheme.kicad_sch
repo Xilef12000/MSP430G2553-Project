@@ -4,6 +4,12 @@
 	(generator_version "8.0")
 	(uuid "97bdd60d-fb52-4507-b890-429df9b97461")
 	(paper "A4")
+	(title_block
+		(title "Final Task Project Scheme")
+		(date "16.12.2024")
+		(company "Niklas Bachman, Manuel König")
+		(comment 1 "HTWG Konstanz")
+	)
 	(lib_symbols
 		(symbol "Connector:Conn_01x03_Socket"
 			(pin_names
