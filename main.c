@@ -80,11 +80,13 @@ void sendSpeed(uint16_t speed, char c){
 
 void updateDisplay() {
     char buffd[6] = "00000";
-    itoa(motorSpeed, buffd);
-    ssd1306_draw12x16Str(0,  0, buffd, 0);
+    itoa(targedSpeed, buffd);
+    ssd1306_draw6x8Str(0, 0, "Soll:", 1, 0);
+    ssd1306_draw12x16Str(12,  12, buffd, 0);
     char buffe[6] = "00000";
-    itoa(targedSpeed, buffe);
-    ssd1306_draw12x16Str(0,  16, buffe, 0);
+    itoa(motorSpeed, buffe);
+    ssd1306_draw6x8Str(0, 4, "Ist:", 1, 0);
+    ssd1306_draw12x16Str(12,  44, buffe, 0);
 }
 
 void itoa(uint16_t num, char *str) {
