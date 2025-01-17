@@ -11,6 +11,7 @@
 
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
+#define INC 4096
 
 void sendSpeed(uint16_t speed, char c);
 void updateDisplay();
@@ -59,7 +60,7 @@ int main(void)
             if (i == 6) {
                 motorSpeed = decode(ioStr+1);
                 sendSpeed(motorSpeed, 'D');
-                targedSpeed = motorSpeed; // WIP: just for testing
+                //targedSpeed = motorSpeed; // WIP: just for testing
                 updateDisplay();
             }
         }
@@ -108,11 +109,11 @@ __interrupt void Timer_A (void){
 // Port2 interrupt service routine
 #pragma vector=PORT2_VECTOR
 __interrupt void Port2 (void){
-    if(P2IFG & BIT1 && targedSpeed > 0){
-        targedSpeed--;
+    if(P2IFG & BIT1){
+        targedSpeed = targedSpeed < INC ? 0 : targedSpeed - INC;
     }
-    if(P2IFG & BIT2 && targedSpeed < UINT16_MAX){
-        targedSpeed++;
+    if(P2IFG & BIT2){
+        targedSpeed = targedSpeed > UINT16_MAX - INC ? UINT16_MAX : targedSpeed + INC;
     }
 
    P2IFG = 0x00;    // clear interrupt
