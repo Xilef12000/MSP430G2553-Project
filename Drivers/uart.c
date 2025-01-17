@@ -123,6 +123,8 @@ __attribute__((interrupt(USCIAB0TX_VECTOR))) void USCI0TX_ISR(void) {
 
 void encode(uint16_t num, char *str) {
     //Buffer needs to be of char[8] and contains "X00000#"
+    // convert int to char array in reversed order
+    // use offset to accommodate for message start and end character
     uint8_t i = 5;
 
     while (num > 0) {
@@ -131,6 +133,7 @@ void encode(uint16_t num, char *str) {
     }
 }
 uint16_t decode(char *str) {
+    // simple atoi
     uint16_t num = 0;
     uint8_t i = 0;
     while (str[i] >= '0' && str[i] <= '9') {

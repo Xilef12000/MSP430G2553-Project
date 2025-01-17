@@ -5,13 +5,13 @@
 #include "Drivers/cs.h"
 #include <Drivers/ssd1306_lib.h>
 
-#define STRING_SIZE 8
+#define STRING_SIZE 8 // max length of one Message
 
 #define DATARATE 9600     // UART baud rate
 
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
-#define INC 4096
+#define INC 4096 // increment/decrement step width
 
 void sendSpeed(uint16_t speed, char c);
 void updateDisplay();
@@ -22,7 +22,7 @@ int main(void)
 	WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
 	
 	// Init clock (setup DCO,  MCLK and SMCLK)
-    CS_setDCOFrequency(16000000);                                           // => DCOCLK = 1 MHz
+    CS_setDCOFrequency(16000000);                                           // => DCOCLK = 16 MHz
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);      // => MCLK = DCOCLK
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);     // => SMCLK = DCOCLK
 
@@ -32,14 +32,13 @@ int main(void)
     spi_init();               // Initialize SPI
     ssd1306_init();           // Initialize SSD1306
     ssd1306_clear();          // Clear the screen
-    //ssd1306_draw6x8Str(0,  0, "Test4", 1, 0);
-    //ssd1306_draw12x16Str(60,  40, "Test3", 0);
 
-
+    // Timer for sending targedSpeed every x ms
     TA1CCR0 = (49999);                  // 400ms
     TA1CTL = TASSEL_2 + MC_1 + ID_3;    // SMCLK, upmode, div 8
     TA1CCTL0 = CCIE;                    // enable interrupt
 
+    // P2.1 and P2.2 for incement and decrement
     P2DIR &= ~(BIT1 + BIT2);    // input
     P2REN |= BIT1 + BIT2;       // enable internal pull
     P2OUT |= BIT1 + BIT2;       // pullup
@@ -53,13 +52,13 @@ int main(void)
     updateDisplay();
 
     while(1){
-        int i = uart_peek('A');
-        if(i != -1){
-            char ioStr[STRING_SIZE+1];
-            fgets(ioStr,STRING_SIZE,stdin);
-            if (i == 6) {
-                motorSpeed = decode(ioStr+1);
-                sendSpeed(motorSpeed, 'D');
+        int i = uart_peek('A'); // get Position of 'A' in rxBuffer
+        if(i != -1){ // if 'A' in rxBuffer
+            char ioStr[STRING_SIZE+1]; // create local Buffer
+            fgets(ioStr,STRING_SIZE,stdin); // copy string of size STRING_SIZE from rxBuffer to local Buffer
+            if (i == 6) { // make shure message is of correct length
+                motorSpeed = decode(ioStr+1); // convert value in Message to uint16
+                sendSpeed(motorSpeed, 'D'); // reply with received value for debugging
                 //targedSpeed = motorSpeed; // WIP: just for testing
                 updateDisplay();
             }
@@ -69,28 +68,28 @@ int main(void)
 
 void sendSpeed(uint16_t speed, char c){
     char buff[8] = "#00000Z";
-    buff[6] = c;
+    buff[6] = c; // message Buffer
     // A Motorspeed from Motor
     // B TargedSpeed from Display
     // C TargedSpeed from Motor
     // D Motorspeed from Display
     // Z placeholder
-    encode(speed, buff);
+    encode(speed, buff); // character offseted itoa
     puts(buff);
 }
 
 void updateDisplay() {
-    char buffd[6] = "00000";
+    char buffd[6] = "00000"; // itoa for targedSpeed
     itoa(targedSpeed, buffd);
     ssd1306_draw6x8Str(0, 0, "Soll:", 1, 0);
     ssd1306_draw12x16Str(12,  12, buffd, 0);
-    char buffe[6] = "00000";
+    char buffe[6] = "00000"; // itoa for motorSpeed
     itoa(motorSpeed, buffe);
     ssd1306_draw6x8Str(0, 4, "Ist:", 1, 0);
     ssd1306_draw12x16Str(12,  44, buffe, 0);
 }
 
-void itoa(uint16_t num, char *str) {
+void itoa(uint16_t num, char *str) { // itoa for displaying values
     //Buffer needs to be of type char[6]
     uint8_t i = 4;
 
@@ -109,10 +108,12 @@ __interrupt void Timer_A (void){
 // Port2 interrupt service routine
 #pragma vector=PORT2_VECTOR
 __interrupt void Port2 (void){
-    if(P2IFG & BIT1){
+    if(P2IFG & BIT1){ // if button 1
+        // if INC can't be subtracted from targedSpeed (without overflow), set to zero, otherwise subtract
         targedSpeed = targedSpeed < INC ? 0 : targedSpeed - INC;
     }
-    if(P2IFG & BIT2){
+    if(P2IFG & BIT2){ if button 2
+        // if INC can't be added to targedSpeed (without overflow), set to UINT16_MAX, otherwise add
         targedSpeed = targedSpeed > UINT16_MAX - INC ? UINT16_MAX : targedSpeed + INC;
     }
 
