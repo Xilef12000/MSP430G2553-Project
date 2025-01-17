@@ -9,24 +9,24 @@
 
 #define DATARATE 9600     // UART baud rate
 
-uint16_t motorSpeed = 65535;
-uint16_t targedSpeed = 1000;
+volatile uint16_t motorSpeed = 65535;
+volatile uint16_t targedSpeed = 500;
 
 #define TIME_PERIODE    65535
-#define ON_TIME_0           0
-#define ON_TIME_40          20000
-#define ON_TIME_70          35000
-#define ON_TIME_100         50000
 
 // PID variables
-#define Kp 64 // Teiler Kp_divider; ie 16/16 = 1 = Kp
-#define Kp_divider 1
-volatile uint16_t e = 0;
+#define Kp 48
+#define Ki 2
 
-#define bit16_max 65535
-#define e_max (bit16_max / Kp)
+volatile uint16_t e = 0; // difference target to actual speed
+volatile uint16_t e_sum = 0; // sum of differences target to actual speed
+volatile uint32_t y = 0; // calculated PWM value
 
-#define SMOOTHING_FACTOR 1  // Strength of the digital low-pass filter
+#define unit16_max 65535
+#define e_max (unit16_max / Kp)
+#define e_sum_max (unit16_max / Ki)
+
+volatile char timer_div_counter = 0;
 
 void        portInit(void); // initialize counter input pin
 
@@ -36,7 +36,6 @@ volatile uint16_t        interval;
 volatile uint32_t        smoothed_interval_x128;
 
 void sendSpeed(uint16_t speed, char c);
-volatile char timer_div_counter = 0;
 
 int main(void)
 {
@@ -74,12 +73,12 @@ int main(void)
                                                 // Up Mode:   MC_2
                                                 // TimerA clear: TACLR
                                                 // Input divider: ID_0: /1
-    TA1CCR0  = bit16_max-1;                 // CCR1 PWM duty cycle
+    TA1CCR0  = unit16_max-1;                 // CCR1 PWM duty cycle
 
 
     // Timer A0 CaptureCompareUnit 1
     TA1CCTL1 = OUTMOD_7;                    // CCR1 reset/set
-    TA1CCR1  = ON_TIME_40;                 // CCR1 PWM duty cycle
+    TA1CCR1  = 20000;                 // initial CCR1 PWM duty cycle
 
 
     __enable_interrupt();       // Global interrupt enable
@@ -97,6 +96,9 @@ int main(void)
                 //motorSpeed = targedSpeed; // WIP: just for testing
             }
         }
+
+
+
     }
 }
 
@@ -138,7 +140,7 @@ void portInit(void){
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void){
     if(timer_div_counter == 7){
-        sendSpeed(TA1CCR1, 'A'); // TA1CCR1 motorSpeed
+        sendSpeed(motorSpeed, 'A'); // TA1CCR1, motorSpeed, e
         timer_div_counter = 0;
     }
     timer_div_counter++;
@@ -159,8 +161,9 @@ __interrupt void Timer_A1 (void)
             interval        = capturedCount - lastCount;
         }
         else{
-            interval = bit16_max - lastCount + capturedCount;
+            interval = (unit16_max - lastCount) + capturedCount;
         }
+        lastCount       = capturedCount;
 
 
         /*
@@ -169,32 +172,46 @@ __interrupt void Timer_A1 (void)
         // (The use of floats is much more resource-intensive)
         smoothed_interval_x128 = (smoothed_interval_x128 * (SMOOTHING_FACTOR - 1) + (((uint32_t)interval)*128)) / SMOOTHING_FACTOR;
 
-        motorSpeed = bit16_max - (uint16_t)(smoothed_interval_x128/128);
+        motorSpeed = unit16_max - (uint16_t)(smoothed_interval_x128/128);
         */
 
         // reversed relation with minus
-        //motorSpeed = bit16_max - interval;
+        //motorSpeed = unit16_max - interval;
 
-        // reversed relation fraction
+        // reversed relation with fraction
         motorSpeed = 8e6 / interval; // pulses per second
 
-        lastCount       = capturedCount;
-
         // regulator code
-
-        if(motorSpeed > targedSpeed){
-            e = 0; // = 2^16 - targedSpeed - motorSpeed
-        }
-        else{
+        // limit variables
+        if(targedSpeed > motorSpeed){       // e > 0
             e = targedSpeed - motorSpeed;
+
+            if(e_sum_max - e_sum > e)       // prevent overflow on multiplication with Ki
+                {e_sum = e_sum + e;}
+            else {e_sum = e_sum_max;}
+        }
+        else{                               // e < 0
+            e = motorSpeed - targedSpeed;
+
+            if(e_sum > e){
+                e_sum = e_sum - e;
+            }
+            else{
+                e_sum = 0;
+            }
+            e = 0;
         }
 
-        if(e > e_max){          // overflow handling
-            TA1CCR1 = bit16_max;
-        }
-        else{
-            TA1CCR1 = (Kp * e); //(Kp * e) / Kp_divider;
-        }
+        if(e > e_max) {e = e_max;}          // prevent overflow on multiplication with Kd
+
+        // calculate output
+        y = ((uint32_t)(Kp * e) + (uint32_t)(Ki * e_sum));
+
+        if(y > unit16_max) {y = unit16_max;}
+
+        // write PWM value
+        TA1CCR1 = (uint16_t)y;
+
     }
 
     TA1CCTL2 &= ~CCIFG;   // reset IFG
