@@ -21,6 +21,7 @@ void sendSpeed(uint16_t speed, char c);
 void updateDisplay();
 void itoa(uint16_t num, char *str);
 
+uint16_t timerDivCounter = 0;
 int main(void)
 {
 	WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
@@ -38,7 +39,7 @@ int main(void)
     ssd1306_clear();          // Clear the screen
 
     // Timer for sending targedSpeed every x ms
-    TA1CCR0 = (49999);                  // 400ms
+    TA1CCR0 = (UINT16_MAX);             // x ms
     TA1CTL = TASSEL_2 + MC_1 + ID_3;    // SMCLK, upmode, div 8
     TA1CCTL0 = CCIE;                    // enable interrupt
 
@@ -106,7 +107,12 @@ void itoa(uint16_t num, char *str) { // itoa for displaying values
 // Timer1 A0 interrupt service routine
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt void Timer_A (void){
-    sendSpeed(targedSpeed, 'B');
+    // Software Divider to reduce sending Frequency
+    if (timerDivCounter >= 16){
+        sendSpeed(targedSpeed, 'B');
+        timerDivCounter = 0;
+    }
+    timerDivCounter++;
 }
 
 // Port2 interrupt service routine
