@@ -85,7 +85,7 @@ void sendSpeed(uint16_t speed, char c){
 
 void updateDisplay() {
     char buffd[6] = "00000"; // itoa for targedSpeed
-    itoa(targedSpeed, buffd);
+    itoa(targedSpeed/24, buffd);
     ssd1306_draw6x8Str(0, 0, "Soll:", 1, 0);
     ssd1306_draw12x16Str(12,  12, buffd, 0);
     char buffe[6] = "00000"; // itoa for motorSpeed
