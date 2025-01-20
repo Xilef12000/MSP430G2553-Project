@@ -13,6 +13,10 @@ uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = 0;
 #define INC 4096 // increment/decrement step width
 
+// BIT for UP and DOWN Button in Port2
+#define UP BIT3
+#define DOWN BIT4
+
 void sendSpeed(uint16_t speed, char c);
 void updateDisplay();
 void itoa(uint16_t num, char *str);
@@ -39,11 +43,11 @@ int main(void)
     TA1CCTL0 = CCIE;                    // enable interrupt
 
     // P2.1 and P2.2 for incement and decrement
-    P2DIR &= ~(BIT1 + BIT2);    // input
-    P2REN |= BIT1 + BIT2;       // enable internal pull
-    P2OUT |= BIT1 + BIT2;       // pullup
-    P2IE |= BIT1 + BIT2;        // enable interrupt
-    P2IES |= BIT1 + BIT2;       // falling edge
+    P2DIR &= ~(DOWN + UP);    // input
+    P2REN |= DOWN + UP;       // enable internal pull
+    P2OUT |= DOWN + UP;       // pullup
+    P2IE |= DOWN + UP;        // enable interrupt
+    P2IES |= DOWN + UP;       // falling edge
     P2IFG = 0x00;               // clear interrupt
 
     __enable_interrupt();       // Global interrupt enable
@@ -108,11 +112,11 @@ __interrupt void Timer_A (void){
 // Port2 interrupt service routine
 #pragma vector=PORT2_VECTOR
 __interrupt void Port2 (void){
-    if(P2IFG & BIT1){ // if button 1
+    if(P2IFG & DOWN){ // if button DOWN
         // if INC can't be subtracted from targedSpeed (without overflow), set to zero, otherwise subtract
         targedSpeed = targedSpeed < INC ? 0 : targedSpeed - INC;
     }
-    if(P2IFG & BIT2){ if button 2
+    if(P2IFG & UP){ // if button UP
         // if INC can't be added to targedSpeed (without overflow), set to UINT16_MAX, otherwise add
         targedSpeed = targedSpeed > UINT16_MAX - INC ? UINT16_MAX : targedSpeed + INC;
     }
