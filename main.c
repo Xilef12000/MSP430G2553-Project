@@ -10,21 +10,25 @@
 #define DATARATE 9600     // UART baud rate
 
 volatile uint16_t motorSpeed = 65535;
-volatile uint16_t targedSpeed = 500;
+volatile uint16_t targedSpeed = 1000;
 
 #define TIME_PERIODE    65535
 
 // PID variables
 #define Kp 48
-#define Ki 2
+#define Ki 4
+#define Kd 1
+#define input_div 24 //map to achievable motor speeds
 
 volatile uint16_t e = 0; // difference target to actual speed
+volatile int32_t e_ld = 0; // used for last and diff e
 volatile uint16_t e_sum = 0; // sum of differences target to actual speed
 volatile uint32_t y = 0; // calculated PWM value
 
 #define unit16_max 65535
 #define e_max (unit16_max / Kp)
 #define e_sum_max (unit16_max / Ki)
+#define e_ld_max (unit16_max / Kd)
 
 volatile char timer_div_counter = 0;
 
@@ -91,7 +95,7 @@ int main(void)
             char ioStr[STRING_SIZE+1];
             fgets(ioStr,STRING_SIZE,stdin);
             if (msg_complete == 6) {
-                targedSpeed = decode(ioStr+1) / 24;
+                targedSpeed = decode(ioStr+1) / input_div;
                 sendSpeed(targedSpeed, 'C');
                 //motorSpeed = targedSpeed; // WIP: just for testing
             }
@@ -185,13 +189,12 @@ __interrupt void Timer_A1 (void)
         // limit variables
         if(targedSpeed > motorSpeed){       // e > 0
             e = targedSpeed - motorSpeed;
-
-            if(e_sum_max - e_sum > e)       // prevent overflow on multiplication with Ki
-                {e_sum = e_sum + e;}
-            else {e_sum = e_sum_max;}
+            e_sum = e_sum + e;
+            e_ld = e - e_ld;
         }
         else{                               // e < 0
             e = motorSpeed - targedSpeed;
+            e_ld = -e - e_ld;
 
             if(e_sum > e){
                 e_sum = e_sum - e;
@@ -202,12 +205,25 @@ __interrupt void Timer_A1 (void)
             e = 0;
         }
 
-        if(e > e_max) {e = e_max;}          // prevent overflow on multiplication with Kd
+        if(e > e_max) {e = e_max;}                          // prevent overflow on multiplication with Kd
+        if(e_sum > e_sum_max) {e_sum = e_sum_max;}          // prevent overflow on multiplication with Ki
+        if(e_ld > e_ld_max) {e_ld = e_ld_max;}              // prevent overflow on multiplication with Kd
+        if(e_ld < -e_ld_max) {e_ld = -e_ld_max;}
 
         // calculate output
-        y = ((uint32_t)(Kp * e) + (uint32_t)(Ki * e_sum));
+        y = (uint32_t)(Kp * e) + (uint32_t)(Ki * e_sum);
+
+        /*
+        // no stable output
+        e_ld = (Kd * e_ld);
+        if(y < -e_ld) {y = 0;}
+        else {y = y + e_ld;}
+        */
+
 
         if(y > unit16_max) {y = unit16_max;}
+
+        e_ld = e;
 
         // write PWM value
         TA1CCR1 = (uint16_t)y;
