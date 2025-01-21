@@ -2210,10 +2210,6 @@
 		(uuid "f005813b-5103-4289-af77-5c20fb87af64")
 	)
 	(no_connect
-		(at 154.94 107.95)
-		(uuid "08fed347-c857-48a2-8549-bca51a3b3c45")
-	)
-	(no_connect
 		(at 104.14 55.88)
 		(uuid "291603f8-5311-471f-9feb-f16f742e000f")
 	)
@@ -2232,10 +2228,6 @@
 	(no_connect
 		(at 104.14 43.18)
 		(uuid "3d99f38f-e6c8-4bc2-93fa-74bdb22f7b84")
-	)
-	(no_connect
-		(at 104.14 34.29)
-		(uuid "3ff92316-2afc-4f4b-ab8b-e9f183e81f53")
 	)
 	(no_connect
 		(at 104.14 53.34)
@@ -3074,6 +3066,74 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 100.33 34.29 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2080bd2b-ca2b-48fc-9846-a1fee3375b05")
+		(property "Reference" "R2"
+			(at 100.33 27.94 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 100.33 30.48 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 100.33 36.068 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 100.33 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 100.33 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "f96cd271-fcec-48ee-b238-82b8308b42f4")
+		)
+		(pin "1"
+			(uuid "a55ead22-a709-4786-b735-1e18c903fe69")
+		)
+		(instances
+			(project ""
+				(path "/97bdd60d-fb52-4507-b890-429df9b97461"
+					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 147.32 64.77 0)
 		(unit 1)
@@ -3356,6 +3416,208 @@
 			(project "Proj_scheme"
 				(path "/97bdd60d-fb52-4507-b890-429df9b97461"
 					(reference "#PWR016")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 151.13 107.95 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "42f65581-522f-4bae-9128-404cfe96202c")
+		(property "Reference" "R3"
+			(at 151.13 101.6 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 151.13 104.14 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 151.13 109.728 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 151.13 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 151.13 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "8e626df9-47aa-42d9-bd97-6c53299e2155")
+		)
+		(pin "1"
+			(uuid "5a9fc4c1-da88-4fea-9b6e-845678a5798a")
+		)
+		(instances
+			(project "Proj_scheme"
+				(path "/97bdd60d-fb52-4507-b890-429df9b97461"
+					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 96.52 34.29 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "514c226e-29a3-45ee-a69e-288a777992f6")
+		(property "Reference" "#PWR010"
+			(at 100.33 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 92.71 34.2899 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 96.52 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 96.52 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 96.52 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "437a3baa-daf7-430f-bb31-c80f1cbf2f3f")
+		)
+		(instances
+			(project "Proj_scheme"
+				(path "/97bdd60d-fb52-4507-b890-429df9b97461"
+					(reference "#PWR010")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 147.32 107.95 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "52d6040a-68e1-4925-927a-47ece98ada66")
+		(property "Reference" "#PWR018"
+			(at 151.13 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 143.51 107.9499 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 147.32 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 147.32 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 147.32 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "5e9fac4e-745d-4319-80a4-7101d12d8734")
+		)
+		(instances
+			(project "Proj_scheme"
+				(path "/97bdd60d-fb52-4507-b890-429df9b97461"
+					(reference "#PWR018")
 					(unit 1)
 				)
 			)
