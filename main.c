@@ -9,9 +9,12 @@
 
 #define DATARATE 9600     // UART baud rate
 
+#define MINSPEED 10000
+#define MAXSPEED 60000
+
 uint16_t motorSpeed = 65535;
-uint16_t targedSpeed = 0;
-#define INC 4096 // increment/decrement step width
+uint16_t targedSpeed = MINSPEED;
+#define INC 10000 // increment/decrement step width
 
 // BIT for UP and DOWN Button in Port2
 #define UP BIT3
@@ -85,12 +88,12 @@ void sendSpeed(uint16_t speed, char c){
 
 void updateDisplay() {
     char buffd[6] = "00000"; // itoa for targedSpeed
-    itoa(targedSpeed/24, buffd);
-    ssd1306_draw6x8Str(0, 0, "Soll:", 1, 0);
+    itoa(targedSpeed/5, buffd);
+    ssd1306_draw6x8Str(0, 0, "Soll RPM:", 1, 0);
     ssd1306_draw12x16Str(12,  12, buffd, 0);
     char buffe[6] = "00000"; // itoa for motorSpeed
-    itoa(motorSpeed, buffe);
-    ssd1306_draw6x8Str(0, 4, "Ist:", 1, 0);
+    itoa(motorSpeed*5, buffe);
+    ssd1306_draw6x8Str(0, 4, "Ist RPM:", 1, 0);
     ssd1306_draw12x16Str(12,  44, buffe, 0);
 }
 
@@ -120,11 +123,11 @@ __interrupt void Timer_A (void){
 __interrupt void Port2 (void){
     if(P2IFG & DOWN){ // if button DOWN
         // if INC can't be subtracted from targedSpeed (without overflow), set to zero, otherwise subtract
-        targedSpeed = targedSpeed < INC ? 0 : targedSpeed - INC;
+        targedSpeed = targedSpeed < MINSPEED + INC ? MINSPEED : targedSpeed - INC;
     }
     if(P2IFG & UP){ // if button UP
         // if INC can't be added to targedSpeed (without overflow), set to UINT16_MAX, otherwise add
-        targedSpeed = targedSpeed > UINT16_MAX - INC ? UINT16_MAX : targedSpeed + INC;
+        targedSpeed = targedSpeed > MAXSPEED - INC ? MAXSPEED : targedSpeed + INC;
     }
 
    P2IFG = 0x00;    // clear interrupt
