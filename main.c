@@ -10,7 +10,7 @@
 #define DATARATE 9600     // UART baud rate
 
 #define MINSPEED 10000
-#define MAXSPEED 60000
+#define MAXSPEED 50000
 
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = MINSPEED;
