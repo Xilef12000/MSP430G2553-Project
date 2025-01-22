@@ -9,12 +9,14 @@
 
 #define DATARATE 9600     // UART baud rate
 
-#define MINSPEED 10000
-#define MAXSPEED 50000
+#define MINSPEED 9600
+#define MAXSPEED 48000
+
+#define SOLLDIV 4.8
 
 uint16_t motorSpeed = 65535;
 uint16_t targedSpeed = MINSPEED;
-#define INC 10000 // increment/decrement step width
+#define INC 9600 // increment/decrement step width
 
 // BIT for UP and DOWN Button in Port2
 #define UP BIT3
@@ -88,7 +90,7 @@ void sendSpeed(uint16_t speed, char c){
 
 void updateDisplay() {
     char buffd[6] = "00000"; // itoa for targedSpeed
-    itoa(targedSpeed/5, buffd);
+    itoa(targedSpeed/SOLLDIV, buffd);
     ssd1306_draw6x8Str(0, 0, "Soll RPM:", 1, 0);
     ssd1306_draw12x16Str(12,  12, buffd, 0);
     char buffe[6] = "00000"; // itoa for motorSpeed
