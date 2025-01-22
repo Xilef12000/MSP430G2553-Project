@@ -88,7 +88,7 @@ int uart_gets(char *pcBuf, uint32_t len) {
     uint32_t count = 0;
     while (count < len - 1) {
         // Warten, bis Daten im RX-Puffer verfügbar sind
-        while (rx_read_index == rx_write_index);
+        //while (rx_read_index == rx_write_index);
         char c = uart_rx_buffer[rx_read_index];
         rx_read_index = (rx_read_index + 1) % UART_RX_BUFFER_SIZE;
         if (c == '\r') { // Zeilenende-Zeichen
