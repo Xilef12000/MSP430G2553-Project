@@ -1,4 +1,11 @@
-// Motor
+//******************************
+// MPS Project - EIB3 - WiSe 23/24
+//
+// Niklas Bachman / 284301
+// Manuel König / 310284
+//
+// Motor Controller
+//******************************
 #include <msp430.h> 
 #include <stdint.h>
 
