@@ -34,7 +34,7 @@
 %opening
 \title{Final Task EIB3 WS24|25}
 \author{Niklas Bachmann \\ Manuel König}
-\sProofOn
+%\sProofOn
 \begin{document}
 	
 	\maketitle
@@ -51,38 +51,7 @@
 	\newpage
 	\section{Structograms}
 	\subsection{Motor-Controller}
-	\begin{figure}[htp]
-		\centering
-		\begin{struktogramm}(160,125)
-			\sub{pressButton}
-			\sub{updateDisplay}
-			\sub{encodeMotorSpeed}
-			\sub{sendMotorSpeed}
-			\sub{receiveMotorSpeed}
-			\assign{setFlag {ABCDZ}}
-			\ifthenelse{4}{1}{ABC Flag}{\sTrue}{\sFalse}
-				\sub{atoi convert to integer}
-				\ifthenelse{3}{1}{if atoi == len}{\sTrue}{\sFalse}
-					\assign{move result to targetSpeed}
-					\change
-				\ifend
-				
-			% wie  wir Vollständigkeit des Strings bestimmt
-			% Flag in ISR
-			% if flag : atoi
-			% if len == 5 : move 
-				\change
-			\ifend
-			\sub{updatePID}
-			\sub{getActualMotorSpeed}
-			\sub{sendActualMotorSpeed}
-			\sub{updateDisplay}
-
-		\end{struktogramm}
-		\caption{Motor-Controller Main function}
-	\end{figure}
-	\newpage
-	\subsection{Display-Controller}
+	
 	\begin{figure}[htp]
 		\centering
 		\begin{struktogramm}(160,130)
@@ -90,6 +59,74 @@
 			\assign{set Sub- and Main Clock (SMCLK and MCLK) to DCO speed}
 			\assign{Initialize UART Interface}
 			\assign{Initialize SPI Interface}
+			\assign{Initialize and Clear OLED}
+			\assign{Setup Timer0 A0 to trigger Interrupt every x ms}
+			\assign{Setup Timer1 A1 to capture light barrier interrupts}
+			\assign{enable Interrupts Globaly}
+			\assign{get motorSpeed}
+			\forever
+			\assign{i = position of character in RX Buffer}
+			\ifthenelse{7}{1}{i != -1}{yes}{no}
+			\assign{create local buffer}
+			\assign{copy from RX buffer to local buffer}
+			\ifthenelse{7}{1}{i == 6}{yes}{no}
+			\assign{encode speed}
+			\assign{set motorspeed to new speed}
+			\assign{send motorspeed (for debugging)}
+			\change
+			\ifend
+			\change
+			\ifend
+			\foreverend
+		\end{struktogramm}
+		\caption{Motor-Controller Main function}
+	\end{figure}
+	
+	\begin{figure}[htp]
+		\centering
+		\begin{struktogramm}(160,35)
+			\ifthenelse{7}{1}{timerDivCounter \textgreater= 7}{yes}{no}
+			\assign{send targedSpeed}
+			\assign{timerDivCounter = 0}
+			\change
+			\ifend
+			\assign{timerDivCounter++}
+		\end{struktogramm}
+		\caption{Motor-Controller Timer0\_A0 ISR}
+	\end{figure}
+	
+	\begin{figure}[htp]
+		\centering
+		\begin{struktogramm}(160,55)
+			\assign{calculate interval from TA1CCR2}
+			\assign{motorSpeed = 8e6 / interval}
+			\assign{PID routine}
+			\ifthenelse{5}{5}{targedSpeed > motorSpeed}{yes}{no}
+           		\assign{e = targedSpeed - motorSpeed}
+				\assign{e\_sum = e\_sum + e}
+				\assign{e\_ld = e - e\_ld}
+				\change
+				\assign{e = motorSpeed - targedSpeed}
+				\assign{e\_sum = e\_sum - e}
+				\assign{e\_ld = -e - e\_ld}
+			\ifend
+			\assign{y = (Kp * e) + (Ki * e\_sum)}
+			\assign{limit calculations to uint 16}
+			\assign{write PWM value to TA1CCR1}
+		\end{struktogramm}
+		\caption{Motor-Controller Timer1\_A1 ISR}
+	\end{figure}
+
+	%\newline
+	\newpage
+	
+	\subsection{Display-Controller}
+	\begin{figure}[htp]
+		\centering
+		\begin{struktogramm}(160,130)
+			\assign{set DCO to 8 MHZ}
+			\assign{set Sub- and Main Clock (SMCLK and MCLK) to DCO speed}
+			\assign{Initialize UART Interface}
 			\assign{Initialize and Clear OLED}
 			\assign{Setup Timer1 A0 to trigger Interrupt every x ms}
 			\assign{Setup DOWN and UP pin to input, pullup, and trigger Interrupt on falling edge}
@@ -114,6 +151,7 @@
 		\end{struktogramm}
 		\caption{Display-Controller Main function}
 	\end{figure}
+	
 	\begin{figure}[htp]
 		\centering
 		\begin{struktogramm}(160,35)
@@ -126,6 +164,7 @@
 		\end{struktogramm}
 		\caption{Display-Controller Timer1\_A0 ISR}
 	\end{figure}
+	
 	\begin{figure}[htp]
 		\centering
 		\begin{struktogramm}(160,95)
