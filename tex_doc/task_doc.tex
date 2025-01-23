@@ -34,7 +34,7 @@
 %opening
 \title{Final Task EIB3 WS24|25}
 \author{Niklas Bachmann \\ Manuel König}
-%\sProofOn
+\sProofOn
 \begin{document}
 	
 	\maketitle
@@ -54,12 +54,10 @@
 	
 	\begin{figure}[htp]
 		\centering
-		\begin{struktogramm}(160,130)
+		\begin{struktogramm}(160,110)
 			\assign{set DCO to 8 MHZ}
 			\assign{set Sub- and Main Clock (SMCLK and MCLK) to DCO speed}
 			\assign{Initialize UART Interface}
-			\assign{Initialize SPI Interface}
-			\assign{Initialize and Clear OLED}
 			\assign{Setup Timer0 A0 to trigger Interrupt every x ms}
 			\assign{Setup Timer1 A1 to capture light barrier interrupts}
 			\assign{enable Interrupts Globaly}
@@ -97,9 +95,9 @@
 	
 	\begin{figure}[htp]
 		\centering
-		\begin{struktogramm}(160,55)
+		\begin{struktogramm}(160,60)
 			\assign{calculate interval from TA1CCR2}
-			\assign{motorSpeed = 8e6 / interval}
+			\assign{motorSpeed = $8\cdot 10^6$ / interval}
 			\assign{PID routine}
 			\ifthenelse{5}{5}{targedSpeed > motorSpeed}{yes}{no}
            		\assign{e = targedSpeed - motorSpeed}
@@ -127,6 +125,7 @@
 			\assign{set DCO to 16 MHZ}
 			\assign{set Sub- and Main Clock (SMCLK and MCLK) to DCO speed}
 			\assign{Initialize UART Interface}
+			\assign{Initialize SPI Interface}
 			\assign{Initialize and Clear OLED}
 			\assign{Setup Timer1 A0 to trigger Interrupt every x ms}
 			\assign{Setup DOWN and UP pin to input, pullup, and trigger Interrupt on falling edge}
