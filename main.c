@@ -16,7 +16,7 @@ volatile uint16_t targedSpeed = 1000;
 
 // PID variables
 #define Kp 48
-#define Ki 4
+#define Ki 2
 #define Kd 1
 #define input_div 24 //map to achievable motor speeds
 
@@ -80,7 +80,7 @@ int main(void)
     TA1CCR0  = unit16_max-1;                 // CCR1 PWM duty cycle
 
 
-    // Timer A0 CaptureCompareUnit 1
+    // Timer A CaptureCompareUnit 1
     TA1CCTL1 = OUTMOD_7;                    // CCR1 reset/set
     TA1CCR1  = 20000;                 // initial CCR1 PWM duty cycle
 
@@ -97,7 +97,6 @@ int main(void)
             if (msg_complete == 6) {
                 targedSpeed = decode(ioStr+1) / input_div;
                 sendSpeed(targedSpeed, 'C');
-                //motorSpeed = targedSpeed; // WIP: just for testing
             }
         }
 
@@ -156,8 +155,6 @@ __interrupt void Timer_A1 (void)
 {
     if(TA1CCTL2 & CCIFG){
 
-        //TESTPIN1_HIGH();                // Use Testpin to measure the run time of the ISR with an oscilloscope
-
         capturedCount   = TA1CCR2;      // Readout the captured timer value
 
         // Timer overflow handling
@@ -170,17 +167,6 @@ __interrupt void Timer_A1 (void)
         lastCount       = capturedCount;
 
 
-        /*
-        // We are calculating with integer values. Therefore in a division by SMOOTHING_FACTOR the decimal places are removed
-        // Idea for a solution: Calculate always with value*128
-        // (The use of floats is much more resource-intensive)
-        smoothed_interval_x128 = (smoothed_interval_x128 * (SMOOTHING_FACTOR - 1) + (((uint32_t)interval)*128)) / SMOOTHING_FACTOR;
-
-        motorSpeed = unit16_max - (uint16_t)(smoothed_interval_x128/128);
-        */
-
-        // reversed relation with minus
-        //motorSpeed = unit16_max - interval;
 
         // reversed relation with fraction
         motorSpeed = 8e6 / interval; // pulses per second
@@ -231,24 +217,6 @@ __interrupt void Timer_A1 (void)
     }
 
     TA1CCTL2 &= ~CCIFG;   // reset IFG
-    //TESTPIN1_LOW();                 // Use Testpin to measure the run time of the ISR with an oscilloscope
 
 }
 
-/*
-// Timer A1 interrupt service routine
-#pragma vector=TIMER1_A0_VECTOR
-__interrupt void Timer_A1 (void){
-
-    // regulator code
-
-    if(motorSpeed < targedSpeed){
-        e = motorSpeed - targedSpeed ; // = 2^16 - targedSpeed - motorSpeed
-    }
-    else{
-        e = 0;
-    }
-    y = Kp * e;
-    TA1CCR1  = y;
-}
-*/
