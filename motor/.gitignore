@@ -1,0 +1,13 @@
+# ignore the following folders
+/Debug/
+/html
+/latex
+/.launches
+
+
+# ignore the following file types
+*.asm 
+*.obj
+*.mk
+
+
